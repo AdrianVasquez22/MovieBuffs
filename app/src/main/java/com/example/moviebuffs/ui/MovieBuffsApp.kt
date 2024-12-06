@@ -32,7 +32,9 @@ fun MovieBuffsApp() {
         ) {
             val movieBuffsViewModel: MovieBuffsViewModel = viewModel()
             HomeScreen(
-                movieBuffsUiState = movieBuffsViewModel.moviebuffsUiState)
+                movieBuffsUiState = movieBuffsViewModel.moviebuffsUiState,
+                retryAction = movieBuffsViewModel::getMoviePhotos,
+            )
         }
     }
 }
