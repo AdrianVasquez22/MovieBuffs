@@ -21,6 +21,7 @@ sealed interface MovieBuffsUiState {
 
 data class UiState(
     val currentMovie: MoviePhoto?,
+    val movieList: List<MoviePhoto> = emptyList(),
     val isShowingListPage: Boolean = true
 
 )
