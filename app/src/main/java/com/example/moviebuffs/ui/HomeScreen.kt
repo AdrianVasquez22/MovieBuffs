@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
@@ -21,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,17 +43,26 @@ import com.example.moviebuffs.network.MoviePhoto
 @Composable
 fun HomeScreen(
     movieBuffsUiState: MovieBuffsUiState,
+    uiState: UiState,
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
-    onClick: (MoviePhoto) -> Unit
+    onClick: (MoviePhoto) -> Unit,
+    navigateBackToListPage: () -> Unit // Pass this as a parameter
 ) {
     when (movieBuffsUiState) {
         is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
-        is MovieBuffsUiState.Success -> PhotosListScreen(movieBuffsUiState.photos, modifier, onClick)
+        is MovieBuffsUiState.Success -> {
+            if (uiState.isShowingListPage) {
+                PhotosListScreen(movieBuffsUiState.photos, modifier, onClick)
+            } else {
+                uiState.currentMovie?.let {
+                    MoviesDetail(movie = it, onBackClick = { navigateBackToListPage() })
+                }
+            }
+        }
         is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
     }
 }
-
 
 @Composable
 fun MoviePhotoCard(photo: MoviePhoto, modifier: Modifier = Modifier, onClick: (MoviePhoto) -> Unit) {
@@ -164,9 +175,20 @@ fun ErrorScreen(retryAction: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+
 @Composable
-fun MoviesDetail(movie: MoviePhoto, modifier: Modifier = Modifier) {
+fun MoviesDetail(movie: MoviePhoto, onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back)
+            )
+        }
+
         AsyncImage(
             model = ImageRequest.Builder(context = LocalContext.current)
                 .data(movie.imgSrc)
@@ -174,39 +196,40 @@ fun MoviesDetail(movie: MoviePhoto, modifier: Modifier = Modifier) {
                 .build(),
             contentDescription = movie.title,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth().height(300.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(350.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = movie.title,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold
         )
-    }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-    Column(modifier = modifier.padding(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.Info,
-                contentDescription = "Information Icon",
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(end = 2.dp)
-            )
-            Text(
-                text = movie.rating,
-                style = MaterialTheme.typography.titleMedium
+        Column(modifier = Modifier.padding(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = "Information Icon",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(end = 2.dp)
                 )
-            Text(
-                text = "${movie.length} | ",
-                style = MaterialTheme.typography.titleMedium
-            )
+                Text(
+                    text = movie.rating,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "${movie.length} | ",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
 
-        Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -220,7 +243,7 @@ fun MoviesDetail(movie: MoviePhoto, modifier: Modifier = Modifier) {
                 )
             }
 
-        Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -234,7 +257,7 @@ fun MoviesDetail(movie: MoviePhoto, modifier: Modifier = Modifier) {
                 )
             }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = movie.description,
@@ -242,32 +265,52 @@ fun MoviesDetail(movie: MoviePhoto, modifier: Modifier = Modifier) {
             )
         }
     }
+}
 
 @Composable
-fun MovieListAndDetails(
+fun MoviesListAndDetails(
+    movieBuffsUiState: MovieBuffsUiState,
     uiState: UiState,
-    updateCurrentMovie: (MoviePhoto) -> Unit,
-    navigateToDetailPage: () -> Unit,
-    navigateToListPage: () -> Unit
+    retryAction: () -> Unit,
+    onClick: (MoviePhoto) -> Unit,
+    navigateBackToListPage: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column(
-            modifier = Modifier.weight(2f).padding(start = 16.dp, end = 16.dp)
+            modifier = Modifier
+                .weight(2f)
+                .padding(start = 16.dp, end = 16.dp)
         ) {
-            PhotosListScreen(photos = uiState.movieList, onClick = { movie ->
-                updateCurrentMovie(movie)
-                navigateToDetailPage()
-            })
+            when (movieBuffsUiState) {
+                is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
+                is MovieBuffsUiState.Success -> PhotosListScreen(
+                    photos = movieBuffsUiState.photos,
+                    modifier = modifier,
+                    onClick = onClick
+                )
+                is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
+            }
         }
 
-        Column(modifier = Modifier.weight(3f).padding(end = 16.dp)) {
-            uiState.currentMovie?.let { MoviesDetail(movie = it) }
+        Column(
+            modifier = Modifier
+                .weight(3f)
+                .padding(4.dp)
+        ) {
+            uiState.currentMovie?.let { movie ->
+                MoviesDetail(movie = movie, onBackClick = { navigateBackToListPage() })
+            }
         }
     }
 }
+
+
+
+
 
 
 

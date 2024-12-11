@@ -1,8 +1,5 @@
 package com.example.moviebuffs.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moviebuffs.network.MovieBuffsApi
@@ -20,15 +17,14 @@ sealed interface MovieBuffsUiState {
 }
 
 data class UiState(
-    val currentMovie: MoviePhoto?,
+    val currentMovie: MoviePhoto? = null,
     val movieList: List<MoviePhoto> = emptyList(),
     val isShowingListPage: Boolean = true
-
 )
 
 class MovieBuffsViewModel : ViewModel() {
-    var moviebuffsUiState: MovieBuffsUiState by mutableStateOf(MovieBuffsUiState.Loading)
-        private set
+    private val _movieBuffsUiState = MutableStateFlow<MovieBuffsUiState>(MovieBuffsUiState.Loading)
+    val movieBuffsUiState: StateFlow<MovieBuffsUiState> = _movieBuffsUiState
 
     private val _uiState = MutableStateFlow(
         UiState(
@@ -44,31 +40,33 @@ class MovieBuffsViewModel : ViewModel() {
 
     fun updateCurrentMovie(selectedMovie: MoviePhoto) {
         _uiState.update {
-           it.copy(currentMovie = selectedMovie)
+            it.copy(currentMovie = selectedMovie)
         }
     }
 
-    fun navigateToListPage() {
+    fun navigateBackToListPage() {
         _uiState.update {
             it.copy(isShowingListPage = true)
         }
     }
 
-    fun navigateToDetailPage() {
+    fun navigateToDetailPage(selectedMovie: MoviePhoto) {
         _uiState.update {
-            it.copy(isShowingListPage = false)
+            it.copy(
+                currentMovie = selectedMovie,
+                isShowingListPage = false
+            )
         }
     }
 
     fun getMoviePhotos() {
         viewModelScope.launch {
-            moviebuffsUiState = MovieBuffsUiState.Loading
+            _movieBuffsUiState.value = MovieBuffsUiState.Loading
             try {
-                // Update the state with the fetched data
-                moviebuffsUiState =
-                    MovieBuffsUiState.Success(MovieBuffsApi.retrofitService.getPhotos())
+                val photos = MovieBuffsApi.retrofitService.getPhotos()
+                _movieBuffsUiState.value = MovieBuffsUiState.Success(photos)
             } catch (e: IOException) {
-                moviebuffsUiState = MovieBuffsUiState.Error
+                _movieBuffsUiState.value = MovieBuffsUiState.Error
             }
         }
     }
