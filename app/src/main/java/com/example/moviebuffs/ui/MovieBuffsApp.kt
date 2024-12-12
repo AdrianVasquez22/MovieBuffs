@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun MovieBuffsApp(
     windowSize: WindowWidthSizeClass
 ) {
+
     val movieBuffsViewModel: MovieBuffsViewModel = viewModel()
     val movieBuffsUiState by movieBuffsViewModel.movieBuffsUiState.collectAsState()
     val uiState by movieBuffsViewModel.uiState.collectAsState()
@@ -44,6 +45,7 @@ fun MovieBuffsApp(
         }
     }
 }
+
 
 
 

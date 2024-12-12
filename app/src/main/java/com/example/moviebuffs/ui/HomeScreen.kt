@@ -107,7 +107,7 @@ fun MoviePhotoCard(photo: MoviePhoto, modifier: Modifier = Modifier, onClick: (M
 
                 Text(
                     text = photo.description,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -125,7 +125,7 @@ fun MoviePhotoCard(photo: MoviePhoto, modifier: Modifier = Modifier, onClick: (M
                     )
                     Text(
                         text = photo.reviewScore,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
             }
@@ -179,14 +179,16 @@ fun ErrorScreen(retryAction: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun MoviesDetail(movie: MoviePhoto, onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back)
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back)
+                )
+            }
         }
 
         AsyncImage(
@@ -220,11 +222,11 @@ fun MoviesDetail(movie: MoviePhoto, onBackClick: () -> Unit, modifier: Modifier 
                     modifier = Modifier.padding(end = 2.dp)
                 )
                 Text(
-                    text = movie.rating,
+                    text = "${movie.rating} | ",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "${movie.length} | ",
+                    text = "${movie.length} ",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -307,8 +309,6 @@ fun MoviesListAndDetails(
         }
     }
 }
-
-
 
 
 

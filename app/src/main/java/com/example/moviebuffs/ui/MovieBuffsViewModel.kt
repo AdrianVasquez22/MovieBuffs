@@ -34,6 +34,7 @@ class MovieBuffsViewModel : ViewModel() {
     )
     val uiState: StateFlow<UiState> = _uiState
 
+
     init {
         getMoviePhotos()
     }
