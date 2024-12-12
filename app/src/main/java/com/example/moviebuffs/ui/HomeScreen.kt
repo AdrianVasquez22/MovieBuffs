@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
@@ -21,10 +24,12 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +45,7 @@ import coil.request.ImageRequest
 import com.example.moviebuffs.R
 import com.example.moviebuffs.network.MoviePhoto
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     movieBuffsUiState: MovieBuffsUiState,
@@ -47,20 +53,40 @@ fun HomeScreen(
     retryAction: () -> Unit,
     modifier: Modifier = Modifier,
     onClick: (MoviePhoto) -> Unit,
-    navigateBackToListPage: () -> Unit // Pass this as a parameter
+    navigateBackToListPage: () -> Unit
 ) {
-    when (movieBuffsUiState) {
-        is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
-        is MovieBuffsUiState.Success -> {
-            if (uiState.isShowingListPage) {
-                PhotosListScreen(movieBuffsUiState.photos, modifier, onClick)
-            } else {
-                uiState.currentMovie?.let {
-                    MoviesDetail(movie = it, onBackClick = { navigateBackToListPage() })
+    Column(modifier = modifier.fillMaxSize()) {
+        if (uiState.isShowingListPage) {
+            TopAppBar(
+                title = { Text("Movie Buffs") },
+                actions = {},
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { navigateBackToListPage() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                title = { Text("Movie Buffs") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        when (movieBuffsUiState) {
+            is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
+            is MovieBuffsUiState.Success -> {
+                if (uiState.isShowingListPage) {
+                    PhotosListScreen(movieBuffsUiState.photos, modifier, onClick)
+                } else {
+                    uiState.currentMovie?.let {
+                        MoviesDetail(movie = it, onBackClick = { navigateBackToListPage() })
+                    }
                 }
             }
+            is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
         }
-        is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
     }
 }
 
@@ -70,11 +96,12 @@ fun MoviePhotoCard(photo: MoviePhoto, modifier: Modifier = Modifier, onClick: (M
         modifier = modifier
             .fillMaxWidth()
             .height(180.dp)
-            .padding(top = 4.dp),
+            .padding(top = 4.dp)
+            .clickable { onClick(photo) },  // Wrap the entire card in clickable
         elevation = CardDefaults.elevatedCardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -89,7 +116,6 @@ fun MoviePhotoCard(photo: MoviePhoto, modifier: Modifier = Modifier, onClick: (M
                 modifier = Modifier
                     .size(150.dp)
                     .padding(end = 8.dp)
-                    .clickable { onClick(photo) }
             )
 
             Column(
@@ -179,18 +205,6 @@ fun ErrorScreen(retryAction: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun MoviesDetail(movie: MoviePhoto, onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back)
-                )
-            }
-        }
-
         AsyncImage(
             model = ImageRequest.Builder(context = LocalContext.current)
                 .data(movie.imgSrc)
@@ -269,6 +283,7 @@ fun MoviesDetail(movie: MoviePhoto, onBackClick: () -> Unit, modifier: Modifier 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoviesListAndDetails(
     movieBuffsUiState: MovieBuffsUiState,
@@ -278,37 +293,57 @@ fun MoviesListAndDetails(
     navigateBackToListPage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(2f)
-                .padding(start = 16.dp, end = 16.dp)
-        ) {
-            when (movieBuffsUiState) {
-                is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
-                is MovieBuffsUiState.Success -> PhotosListScreen(
-                    photos = movieBuffsUiState.photos,
-                    modifier = modifier,
-                    onClick = onClick
-                )
-                is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (uiState.isShowingListPage) {
+            TopAppBar(
+                title = { Text("Movie Buffs") },
+                actions = {},
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            TopAppBar(
+                title = { Text("Movie Buffs") },
+                navigationIcon = {
+                    IconButton(onClick = { navigateBackToListPage() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-
-        Column(
-            modifier = Modifier
-                .weight(3f)
-                .padding(4.dp)
+        Row(
+            modifier = modifier.fillMaxSize(),
         ) {
-            uiState.currentMovie?.let { movie ->
-                MoviesDetail(movie = movie, onBackClick = { navigateBackToListPage() })
+            Column(
+                modifier = Modifier
+                    .weight(2f)
+                    .padding(start = 16.dp, end = 16.dp)
+            ) {
+                when (movieBuffsUiState) {
+                    is MovieBuffsUiState.Loading -> LoadingScreen(modifier = modifier.fillMaxSize())
+                    is MovieBuffsUiState.Success -> PhotosListScreen(
+                        photos = movieBuffsUiState.photos,
+                        modifier = modifier,
+                        onClick = onClick
+                    )
+                    is MovieBuffsUiState.Error -> ErrorScreen(retryAction, modifier = modifier.fillMaxSize())
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(3f)
+                    .padding(4.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                uiState.currentMovie?.let { movie ->
+                    MoviesDetail(movie = movie, onBackClick = { navigateBackToListPage() })
+                }
             }
         }
     }
 }
+
 
 
 
